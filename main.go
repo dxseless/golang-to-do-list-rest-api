@@ -1,90 +1,91 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
-	"github.com/gorilla/mux"
+    "encoding/json"
+    "log"
+    "net/http"
+    "strconv"
+    "todo-api/database"
+    "todo-api/models"
+    "github.com/gorilla/mux"
 )
 
-type Todo struct {
-	ID   int    `json:"id"`
-	Task string `json:"task"`
-}
-
-var todos []Todo
-
 func main() {
-	r := mux.NewRouter()
+    database.InitDB()
 
-	// Маршруты
-	r.HandleFunc("/todos", getTodos).Methods("GET")
-	r.HandleFunc("/todos/{id}", getTodo).Methods("GET")
-	r.HandleFunc("/todos", createTodo).Methods("POST")
-	r.HandleFunc("/todos/{id}", updateTodo).Methods("PUT")
-	r.HandleFunc("/todos/{id}", deleteTodo).Methods("DELETE")
+    r := mux.NewRouter()
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+    // Маршруты
+    r.HandleFunc("/todos", getTodos).Methods("GET")
+    r.HandleFunc("/todos/{id}", getTodo).Methods("GET")
+    r.HandleFunc("/todos", createTodo).Methods("POST")
+    r.HandleFunc("/todos/{id}", updateTodo).Methods("PUT")
+    r.HandleFunc("/todos/{id}", deleteTodo).Methods("DELETE")
+
+    log.Println("Сервер запущен на :8080...")
+    log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func getTodos(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(todos)
+    todos, err := database.GetTodos()
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(todos)
 }
 
 func getTodo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+    params := mux.Vars(r)
+    id, _ := strconv.Atoi(params["id"])
 
-	for _, item := range todos {
-		if item.ID == id {
-			json.NewEncoder(w).Encode(item)
-			return
-		}
-	}
-	json.NewEncoder(w).Encode(&Todo{})
+    todo, err := database.GetTodo(id)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusNotFound)
+        return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(todo)
 }
 
 func createTodo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var todo Todo
-	_ = json.NewDecoder(r.Body).Decode(&todo)
-	todo.ID = len(todos) + 1
-	todos = append(todos, todo)
-	json.NewEncoder(w).Encode(todo)
+    var todo models.Todo
+    _ = json.NewDecoder(r.Body).Decode(&todo)
+
+    id, err := database.CreateTodo(todo)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    todo.ID = int(id)
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(todo)
 }
 
 func updateTodo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+    params := mux.Vars(r)
+    id, _ := strconv.Atoi(params["id"])
 
-	for index, item := range todos {
-		if item.ID == id {
-			todos = append(todos[:index], todos[index+1:]...)
-			var todo Todo
-			_ = json.NewDecoder(r.Body).Decode(&todo)
-			todo.ID = id
-			todos = append(todos, todo)
-			json.NewEncoder(w).Encode(todo)
-			return
-		}
-	}
-	json.NewEncoder(w).Encode(todos)
+    var todo models.Todo
+    _ = json.NewDecoder(r.Body).Decode(&todo)
+
+    err := database.UpdateTodo(id, todo)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatusOK)
 }
 
 func deleteTodo(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	id, _ := strconv.Atoi(params["id"])
+    params := mux.Vars(r)
+    id, _ := strconv.Atoi(params["id"])
 
-	for index, item := range todos {
-		if item.ID == id {
-			todos = append(todos[:index], todos[index+1:]...)
-			break
-		}
-	}
-	json.NewEncoder(w).Encode(todos)
+    err := database.DeleteTodo(id)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatusNoContent)
 }
