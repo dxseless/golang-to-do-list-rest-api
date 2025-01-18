@@ -4,14 +4,14 @@ import (
     "database/sql"
     "log"
     "todo-api/models"
-    _ "modernc.org/sqlite"
+    _ "modernc.org/sqlite" 
 )
 
 var db *sql.DB
 
 func InitDB() {
     var err error
-    db, err = sql.Open("sqlite", "./todos.db") 
+    db, err = sql.Open("sqlite", "./todos.db")
     if err != nil {
         log.Fatal(err)
     }
@@ -19,7 +19,8 @@ func InitDB() {
     createTable := `
         CREATE TABLE IF NOT EXISTS todos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            task TEXT
+            task TEXT,
+            status TEXT DEFAULT 'active'
         );
     `
     _, err = db.Exec(createTable)
@@ -33,7 +34,7 @@ func GetDB() *sql.DB {
 }
 
 func CreateTodo(todo models.Todo) (int64, error) {
-    result, err := db.Exec("INSERT INTO todos (task) VALUES (?)", todo.Task)
+    result, err := db.Exec("INSERT INTO todos (task, status) VALUES (?, ?)", todo.Task, todo.Status)
     if err != nil {
         return 0, err
     }
@@ -41,7 +42,7 @@ func CreateTodo(todo models.Todo) (int64, error) {
 }
 
 func GetTodos() ([]models.Todo, error) {
-    rows, err := db.Query("SELECT id, task FROM todos")
+    rows, err := db.Query("SELECT id, task, status FROM todos")
     if err != nil {
         return nil, err
     }
@@ -50,7 +51,7 @@ func GetTodos() ([]models.Todo, error) {
     var todos []models.Todo
     for rows.Next() {
         var todo models.Todo
-        err := rows.Scan(&todo.ID, &todo.Task)
+        err := rows.Scan(&todo.ID, &todo.Task, &todo.Status)
         if err != nil {
             return nil, err
         }
@@ -61,7 +62,7 @@ func GetTodos() ([]models.Todo, error) {
 
 func GetTodo(id int) (models.Todo, error) {
     var todo models.Todo
-    err := db.QueryRow("SELECT id, task FROM todos WHERE id = ?", id).Scan(&todo.ID, &todo.Task)
+    err := db.QueryRow("SELECT id, task, status FROM todos WHERE id = ?", id).Scan(&todo.ID, &todo.Task, &todo.Status)
     if err != nil {
         return todo, err
     }
@@ -69,7 +70,12 @@ func GetTodo(id int) (models.Todo, error) {
 }
 
 func UpdateTodo(id int, todo models.Todo) error {
-    _, err := db.Exec("UPDATE todos SET task = ? WHERE id = ?", todo.Task, id)
+    _, err := db.Exec("UPDATE todos SET task = ?, status = ? WHERE id = ?", todo.Task, todo.Status, id)
+    return err
+}
+
+func UpdateTodoStatus(id int, status string) error {
+    _, err := db.Exec("UPDATE todos SET status = ? WHERE id = ?", status, id)
     return err
 }
 

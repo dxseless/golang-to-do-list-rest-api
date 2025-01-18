@@ -1,4 +1,5 @@
 CREATE TABLE IF NOT EXISTS todos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task TEXT
+    task TEXT,
+    status TEXT DEFAULT 'active'
 );
