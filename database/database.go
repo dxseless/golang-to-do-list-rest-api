@@ -4,14 +4,14 @@ import (
     "database/sql"
     "log"
     "todo-api/models"
-    _ "github.com/mattn/go-sqlite3"
+    _ "modernc.org/sqlite"
 )
 
 var db *sql.DB
 
 func InitDB() {
     var err error
-    db, err = sql.Open("sqlite3", "./todos.db")
+    db, err = sql.Open("sqlite", "./todos.db") 
     if err != nil {
         log.Fatal(err)
     }

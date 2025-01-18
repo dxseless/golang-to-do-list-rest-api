@@ -11,8 +11,10 @@ import (
 )
 
 func main() {
+    // Инициализация базы данных
     database.InitDB()
 
+    // Создание маршрутизатора
     r := mux.NewRouter()
 
     // Маршруты
@@ -22,10 +24,12 @@ func main() {
     r.HandleFunc("/todos/{id}", updateTodo).Methods("PUT")
     r.HandleFunc("/todos/{id}", deleteTodo).Methods("DELETE")
 
+    // Запуск сервера
     log.Println("Сервер запущен на :8080...")
     log.Fatal(http.ListenAndServe(":8080", r))
 }
 
+// Обработчик для получения всех задач
 func getTodos(w http.ResponseWriter, r *http.Request) {
     todos, err := database.GetTodos()
     if err != nil {
@@ -36,6 +40,7 @@ func getTodos(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(todos)
 }
 
+// Обработчик для получения задачи по ID
 func getTodo(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, _ := strconv.Atoi(params["id"])
@@ -49,6 +54,7 @@ func getTodo(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(todo)
 }
 
+// Обработчик для создания новой задачи
 func createTodo(w http.ResponseWriter, r *http.Request) {
     var todo models.Todo
     _ = json.NewDecoder(r.Body).Decode(&todo)
@@ -63,6 +69,7 @@ func createTodo(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(todo)
 }
 
+// Обработчик для обновления задачи
 func updateTodo(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, _ := strconv.Atoi(params["id"])
@@ -78,6 +85,7 @@ func updateTodo(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
 }
 
+// Обработчик для удаления задачи
 func deleteTodo(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     id, _ := strconv.Atoi(params["id"])
