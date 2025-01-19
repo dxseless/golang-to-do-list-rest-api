@@ -27,6 +27,11 @@ func InitDB() {
     if err != nil {
         log.Fatal(err)
     }
+
+	_, err = db.Exec("ALTER TABLE todos ADD COLUMN category TEXT;")
+    if err != nil {
+        log.Println("Поле category уже существует или произошла ошибка:", err)
+    }
 }
 
 func GetDB() *sql.DB {
@@ -34,15 +39,23 @@ func GetDB() *sql.DB {
 }
 
 func CreateTodo(todo models.Todo) (int64, error) {
-    result, err := db.Exec("INSERT INTO todos (task, status) VALUES (?, ?)", todo.Task, todo.Status)
+    result, err := db.Exec("INSERT INTO todos (task, status, category) VALUES (?, ?, ?)", todo.Task, todo.Status, todo.Category)
     if err != nil {
         return 0, err
     }
     return result.LastInsertId()
 }
 
-func GetTodos() ([]models.Todo, error) {
-    rows, err := db.Query("SELECT id, task, status FROM todos")
+func GetTodos(category string) ([]models.Todo, error) {
+    var rows *sql.Rows
+    var err error
+
+    if category != "" {
+        rows, err = db.Query("SELECT id, task, status, category FROM todos WHERE category = ?", category)
+    } else {
+        rows, err = db.Query("SELECT id, task, status, category FROM todos")
+    }
+
     if err != nil {
         return nil, err
     }
@@ -51,7 +64,7 @@ func GetTodos() ([]models.Todo, error) {
     var todos []models.Todo
     for rows.Next() {
         var todo models.Todo
-        err := rows.Scan(&todo.ID, &todo.Task, &todo.Status)
+        err := rows.Scan(&todo.ID, &todo.Task, &todo.Status, &todo.Category)
         if err != nil {
             return nil, err
         }

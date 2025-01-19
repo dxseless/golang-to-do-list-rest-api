@@ -27,7 +27,8 @@ func main() {
 }
 
 func getTodos(w http.ResponseWriter, r *http.Request) {
-    todos, err := database.GetTodos()
+    category := r.URL.Query().Get("category")
+    todos, err := database.GetTodos(category)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
