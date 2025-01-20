@@ -5,7 +5,7 @@ import (
     "log"
     "time"
     "todo-api/models"
-    _ "modernc.org/sqlite" 
+    _ "modernc.org/sqlite"
 )
 
 var db *sql.DB
@@ -45,8 +45,41 @@ func CreateTodo(todo models.Todo) (int64, error) {
     return result.LastInsertId()
 }
 
-func GetTodos() ([]models.Todo, error) {
-    rows, err := db.Query("SELECT id, task, status, created_at, updated_at FROM todos")
+func GetTodos(filter map[string]string) ([]models.Todo, error) {
+    query := "SELECT id, task, status, created_at, updated_at FROM todos"
+    var args []interface{}
+    var conditions []string
+
+    if status, ok := filter["status"]; ok {
+        conditions = append(conditions, "status = ?")
+        args = append(args, status)
+    }
+
+    if createdAfter, ok := filter["created_after"]; ok {
+        conditions = append(conditions, "created_at >= ?")
+        args = append(args, createdAfter)
+    }
+
+    if createdBefore, ok := filter["created_before"]; ok {
+        conditions = append(conditions, "created_at <= ?")
+        args = append(args, createdBefore)
+    }
+
+    if updatedAfter, ok := filter["updated_after"]; ok {
+        conditions = append(conditions, "updated_at >= ?")
+        args = append(args, updatedAfter)
+    }
+
+    if updatedBefore, ok := filter["updated_before"]; ok {
+        conditions = append(conditions, "updated_at <= ?")
+        args = append(args, updatedBefore)
+    }
+
+    if len(conditions) > 0 {
+        query += " WHERE " + strings.Join(conditions, " AND ")
+    }
+
+    rows, err := db.Query(query, args...)
     if err != nil {
         return nil, err
     }

@@ -21,13 +21,29 @@ func main() {
     r.HandleFunc("/todos/{id}", updateTodo).Methods("PUT")
     r.HandleFunc("/todos/{id}", deleteTodo).Methods("DELETE")
 
-    // Запуск сервера
     log.Println("Сервер запущен на :8080...")
     log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func getTodos(w http.ResponseWriter, r *http.Request) {
-    todos, err := database.GetTodos()
+    filter := make(map[string]string)
+    if status := r.URL.Query().Get("status"); status != "" {
+        filter["status"] = status
+    }
+    if createdAfter := r.URL.Query().Get("created_after"); createdAfter != "" {
+        filter["created_after"] = createdAfter
+    }
+    if createdBefore := r.URL.Query().Get("created_before"); createdBefore != "" {
+        filter["created_before"] = createdBefore
+    }
+    if updatedAfter := r.URL.Query().Get("updated_after"); updatedAfter != "" {
+        filter["updated_after"] = updatedAfter
+    }
+    if updatedBefore := r.URL.Query().Get("updated_before"); updatedBefore != "" {
+        filter["updated_before"] = updatedBefore
+    }
+
+    todos, err := database.GetTodos(filter)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
