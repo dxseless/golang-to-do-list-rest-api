@@ -19,16 +19,15 @@ func main() {
     r.HandleFunc("/todos/{id}", getTodo).Methods("GET")
     r.HandleFunc("/todos", createTodo).Methods("POST")
     r.HandleFunc("/todos/{id}", updateTodo).Methods("PUT")
-    r.HandleFunc("/todos/{id}/complete", completeTodo).Methods("PUT") 
     r.HandleFunc("/todos/{id}", deleteTodo).Methods("DELETE")
 
+    // Запуск сервера
     log.Println("Сервер запущен на :8080...")
     log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func getTodos(w http.ResponseWriter, r *http.Request) {
-    category := r.URL.Query().Get("category")
-    todos, err := database.GetTodos(category)
+    todos, err := database.GetTodos()
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
@@ -76,18 +75,6 @@ func updateTodo(w http.ResponseWriter, r *http.Request) {
     _ = json.NewDecoder(r.Body).Decode(&todo)
 
     err := database.UpdateTodo(id, todo)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
-    }
-    w.WriteHeader(http.StatusOK)
-}
-
-func completeTodo(w http.ResponseWriter, r *http.Request) {
-    params := mux.Vars(r)
-    id, _ := strconv.Atoi(params["id"])
-
-    err := database.UpdateTodoStatus(id, "completed")
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return
